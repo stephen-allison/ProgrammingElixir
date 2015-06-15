@@ -81,3 +81,53 @@ defmodule MyEnum do
   end
 
 end
+
+
+defmodule Primes do
+
+  def is_prime(2), do: True
+  def is_prime(n) do
+    not Enum.any?(Stream.map(2..round(:math.sqrt(n)), &(rem(n,&1) == 0)))
+  end
+
+
+  def upto(n) do
+    for x <- 2..n, is_prime(x), do: x
+  end
+
+end
+
+
+defmodule Quicksort do
+
+  def qsort([]), do: []
+  def qsort([h|t]) do
+    {left, right} = Enum.partition(t, fn x -> x < h end)
+    qsort(left) ++ [h] ++ qsort(right)
+  end
+
+end
+
+
+defmodule Partition do
+
+  ## set with n entries s1...sn
+  ## divide into k partitions
+  ## cost of a partition is sum of elements in that partition
+  ## want the partitioning with the lowest maximum partition
+  ## nb, only calculates that score, not the actual partitions
+  ## From The Algorithm Design Manual [Steven S Skiena], p57
+
+  def mincost([s], _k), do: s
+  def mincost(list, 1), do: Enum.sum(list)
+  def mincost(list, k) do
+    for {_, n} <- Enum.with_index(list) do
+      {a, b} = Enum.split(list, n+1)
+      max(mincost(a, k-1), Enum.sum(b))
+    end |> Enum.min
+  end
+
+end
+
+
+
