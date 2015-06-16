@@ -21,26 +21,44 @@ defmodule Partition do
   ## returns matrices M and D as maps
   ## see Algorithm Design Manual p58
   def partition(list, k) do
-    p = [0 | Enum.scan(list, &(&1 + &2))]
+    partial_sums = [0 | Enum.scan(list, &(&1 + &2))]
     n = length(list)
 
+    # m is a lookup telling us the best score
+    # for dividing the first i items into j partitions
+    #
+    # first we set up edge cases
     m = for i <- 1..n, into: %{} do
-      {{i,1}, Enum.fetch!(p, i)}
+      # for 1 partition the score is just the sum of the items
+      # which was precalculated in partial_sums
+      {{i,1}, Enum.fetch!(partial_sums, i)}
     end
     m = for j <- 1..k, into: m do
+      # for 1 item then the score is that item, no matter how many partitions
       {{1,j}, Enum.fetch!(list, 0)}
     end
 
+
     for i <- 2..n, j <- 2..k, x <- 1..i-1 do
+      # x is position of last 'partition edge'
       {i,j,x}
     end
     |> Enum.reduce({m,%{}},
                   fn {i,j,x}, {m,d} ->
-                    s = max(Map.get(m, {x,j-1}, :inf), Enum.fetch!(p,i)-Enum.fetch!(p,x))
-                    previous = Map.get(m, {i,j}, :inf)
-                    if s < previous do
-                      m = Map.put(m, {i,j}, s)
-                      d = Map.put(d, {i,j}, x)
+                    # move through each partitioning of i items into j partitions
+                    # trying different positions for 'x' the new edge
+                    # record the best current score for {i,j} in m, and x in d
+
+                    # worst score = highest summing partition
+                    # it's either the worst partition to left of 'x' or
+                    # the partition to the right
+                    worst = max(Map.get(m, {x,j-1}, :inf),
+                                Enum.fetch!(partial_sums,i) - Enum.fetch!(partial_sums,x))
+                    previous_worst = Map.get(m, {i,j}, :inf)
+
+                    if worst < previous_worst do
+                      m = Map.put(m, {i,j}, worst)
+                      d = Map.put(d, {i,j}, x) # store position of 'edge'
                     end
                     {m,d}
                   end
@@ -58,7 +76,7 @@ defmodule Partition do
 
   ## wrap up partitioning into single function
   def find(list, k) do
-    {m,d} = partition(list, k)
+    {_m,d} = partition(list, k)
     Enum.reverse(boundaries(list, k, d))
   end
 
